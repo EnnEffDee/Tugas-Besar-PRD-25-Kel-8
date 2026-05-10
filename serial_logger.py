@@ -19,7 +19,7 @@ while True:
         line = ser.readline().decode().strip()                      # Baca masukan dari serial
         if line.startswith("PIN"):
             try:
-                itype, device, pin = line.split(",")
+                itype, device, pin, mode = line.split(",")
 
                 users = load_users()
 
@@ -41,9 +41,10 @@ while True:
                         datetime.now().isoformat(),
                         device,
                         pin,
-                        status
+                        status,
+                        mode
                     ])
-
                 ser.write((status + "\n").encode())
+                print(f"{pin} -> {status}")
             except Exception as e:
                 print("ERROR:", e)
