@@ -1,5 +1,5 @@
 {
-  "420697": { "name": "Andi", "enabled": true },
+  "420697": { "name": "Andi", "no_telp": "08123456789", "enabled": true },
   "324561": { "name": "Bndi", "enabled": true },
   "123456": { "name": "Cndi", "enabled": true },
   "898123": { "name": "Dndi", "enabled": false },

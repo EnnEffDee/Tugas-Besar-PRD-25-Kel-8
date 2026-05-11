@@ -3,6 +3,7 @@
 #include <LiquidCrystal_I2C.h>
 
 int buzzerPin = 8;
+int relayPin = 7;
 
 unsigned long start;
 int i;
@@ -44,6 +45,8 @@ void printPIN(int arr[], int len) {
 }
 
 void setup() {
+  pinMode(relayPin, OUTPUT);
+  digitalWrite(relayPin, LOW);
   Serial.begin(9600);
   lcd.init();
   lcd.backlight();
@@ -110,6 +113,9 @@ void loop() {
     count = 0;
     pinstr = "";
     // actuate the solenoid
+    digitalWrite(relayPin, HIGH);
+    delay(10000);
+    digitalWrite(relayPin, LOW);
   }
 
   char key = keypad.getKey();

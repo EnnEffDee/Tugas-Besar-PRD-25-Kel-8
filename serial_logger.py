@@ -1,29 +1,47 @@
+import time
 import serial
 import csv
 import json
 from datetime import datetime
 
-# ser = serial.Serial('COM3', 9600, timeout=1)          # - Windows
-ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)    # - Linux
-# ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # - Mac
+PORT = "/dev/ttyUSB0"
+BAUD = 9600
 
 csv_file = "log.csv"
 json_file = "users.json"
 
 def load_users():
-    with open(json_file, "r") as f:
-        return json.load(f)
+    try:
+        with open(json_file, "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+try:
+    ser = serial.Serial(PORT, BAUD, timeout=1)
+    time.sleep(2)  # wait for Arduino reset
+    ser.reset_input_buffer()
+    print("Connected")
+except Exception as e:
+    print("Cannot open serial:", e)
+    exit()
 
 while True:
-    if ser.in_waiting > 0:
-        line = ser.readline().decode().strip()                      # Baca masukan dari serial
-        if line.startswith("PIN"):
-            try:
+    try:
+        if ser.in_waiting > 0:
+            line = ser.readline().decode(errors='ignore').strip()
+
+            if not line:
+                continue
+
+            print("RX:", line)
+            if line.startswith("PIN"):
                 itype, device, pin, mode = line.split(",")
 
                 users = load_users()
 
                 valid = False
+
                 if pin in users:                                    # PIN ada di JSON?
                     if isinstance(users[pin], dict):
                         valid = users[pin].get("enabled", False)
@@ -46,5 +64,8 @@ while True:
                     ])
                 ser.write((status + "\n").encode())
                 print(f"{pin} -> {status}")
-            except Exception as e:
-                print("ERROR:", e)
+    except serial.SerialException as e:
+        print("Serial error:", e)
+        time.sleep(1)
+    except Exception as e:
+        print("ERROR:", e)
