@@ -1,8 +1,8 @@
 {
   "420697": { "name": "Andi", "no_telp": "08123456789", "enabled": true },
-  "324561": { "name": "Bndi", "enabled": true },
-  "123456": { "name": "Cndi", "enabled": true },
-  "898123": { "name": "Dndi", "enabled": false },
-  "018234": { "name": "Endi", "enabled": true },
-  "111111": { "name": "Fndi", "enabled": false }
+  "324561": { "name": "Bndi", "no_telp": "08234567890", "enabled": true },
+  "123456": { "name": "Cndi", "no_telp": "084341233332", "enabled": true },
+  "898123": { "name": "Dndi", "no_telp": "08655345629", "enabled": false },
+  "018234": { "name": "Endi", "no_telp": "081223456789", "enabled": true },
+  "111111": { "name": "Fndi", "no_telp": "08144456789", "enabled": false }
 }
