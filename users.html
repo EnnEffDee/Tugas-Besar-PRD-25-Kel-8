@@ -25,6 +25,14 @@
             </div>
         </div>
         <script>
+            function formatTs(ts) {
+                if (!ts) return '-';
+                const d = new Date(ts);
+                const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+                const jam = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                return `${d.getDate()} ${months[d.getMonth()]}, ${jam}`;
+            }
+
             async function fetchUsers() {
                 try {
                     const [usersRes, logsRes] = await Promise.all([
@@ -35,9 +43,10 @@
                     const logs = await logsRes.json();
                     const container = document.getElementById('user-cards');
 
-                    const entries = Object.entries(data);
+                    // Filter hanya user aktif
+                    const entries = Object.entries(data).filter(([, user]) => user.enabled);
                     if (entries.length === 0) {
-                        container.innerHTML = '<p class="loading">Belum ada user.</p>';
+                        container.innerHTML = '<p class="loading">Belum ada user aktif.</p>';
                         return;
                     }
 
@@ -82,12 +91,27 @@
                                 badgeLabel = 'Dalam Kos';
                             } else {
                                 badgeClass = 'badge-mode';
-                                badgeLabel = 'Keluar Kos';
+                                badgeLabel = 'Luar Kos';
                             }
                         }
 
+                        // Cari timestamp masuk & keluar terakhir
+                        let tsMasuk = null, tsKeluar = null;
+                        userLogs.forEach(row => {
+                            if (row.status === 'VALID' && row.mode === 'MASUK')  tsMasuk  = row.timestamp;
+                            if (row.status === 'VALID' && row.mode === 'KELUAR') tsKeluar = row.timestamp;
+                        });
+
+                        // Tampilkan keterangan waktu sesuai status
+                        let keteranganWaktu = '';
+                        if (badgeLabel === 'Dalam Kos' || badgeLabel === 'INVALID') {
+                            keteranganWaktu = `<p><span class="label">Masuk</span><span class="mono">${formatTs(tsMasuk)}</span></p>`;
+                        } else if (badgeLabel === 'Luar Kos') {
+                            keteranganWaktu = `<p><span class="label">Keluar</span><span class="mono">${formatTs(tsKeluar)}</span></p>`;
+                        }
+
                         return `
-                        <div class="card ${user.enabled ? '' : 'card-disabled'} card-link" onclick="window.location='/tabel?pin=${pin}'">
+                        <div class="card card-link" onclick="window.location='/tabel?pin=${pin}'">
                             <div class="card-header">
                                 <span class="card-name">${user.name}</span>
                                 <span class="badge ${badgeClass}">${badgeLabel}</span>
@@ -101,6 +125,7 @@
                                     <span class="label">PIN</span>
                                     <span class="mono">${pin}</span>
                                 </p>
+                                ${keteranganWaktu}
                             </div>
                         </div>`;
                     }).join('');
