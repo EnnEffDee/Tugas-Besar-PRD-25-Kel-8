@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Users - Serial Logger</title>
+        <link rel="stylesheet" href="home.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    </head>
+    <body id="viewport">
+        <div id="nav">
+            <nav class="navbar">
+                <a class="nav-element" href="/">Home</a>
+                <a class="nav-element active" href="/users">Users</a>
+            </nav>
+            <hr class="line" />
+        </div>
+        <div id="body">
+            <div class="page-header">
+                <h2 class="page-title">Daftar User</h2>
+            </div>
+            <div class="card-container" id="user-cards">
+                <p class="loading">Memuat data...</p>
+            </div>
+        </div>
+        <script>
+            async function fetchUsers() {
+                try {
+                    const res = await fetch('/api/users');
+                    const data = await res.json();
+                    const container = document.getElementById('user-cards');
+
+                    const entries = Object.entries(data);
+                    if (entries.length === 0) {
+                        container.innerHTML = '<p class="loading">Belum ada user.</p>';
+                        return;
+                    }
+
+                    container.innerHTML = entries.map(([pin, user]) => `
+                        <div class="card ${user.enabled ? '' : 'card-disabled'}">
+                            <div class="card-header">
+                                <span class="card-name">${user.name}</span>
+                                <span class="badge ${user.enabled ? 'badge-valid' : 'badge-invalid'}">
+                                    ${user.enabled ? 'Aktif' : 'Nonaktif'}
+                                </span>
+                            </div>
+                            <div class="card-info">
+                                <p>
+                                    <span class="label">No. Telp</span>
+                                    <span class="mono">${user.no_telp}</span>
+                                </p>
+                                <p>
+                                    <span class="label">PIN</span>
+                                    <span class="mono">${pin}</span>
+                                </p>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (e) {
+                    document.getElementById('user-cards').innerHTML =
+                        '<p class="loading">Gagal memuat data.</p>';
+                }
+            }
+
+            fetchUsers();
+        </script>
+    </body>
+</html>
