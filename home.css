@@ -153,10 +153,12 @@ tbody td {
     color: #333;
 }
 
-.row-valid          { background: #f0fdf4; }
-.row-valid:hover    { background: #dcfce7; }
-.row-invalid        { background: #fff5f5; }
-.row-invalid:hover  { background: #fee2e2; }
+.row-valid           { background: #f0fdf4; }
+.row-valid:hover     { background: #dcfce7; }
+.row-invalid         { background: #fff5f5; }
+.row-invalid:hover   { background: #fee2e2; }
+.row-warning         { background: #fefce8; }
+.row-warning:hover   { background: #fef9c3; }
 
 .mono {
     font-family: 'Roboto Mono', monospace;
@@ -181,9 +183,13 @@ tbody td {
     letter-spacing: 0.03em;
 }
 
-.badge-valid   { background: #dcfce7; color: #15803d; }
-.badge-invalid { background: #fee2e2; color: #b91c1c; }
-.badge-mode    { background: #e0f2fe; color: #0369a1; }
+.badge-valid    { background: #dcfce7; color: #15803d; }
+.badge-invalid  { background: #fee2e2; color: #b91c1c; }
+.badge-warning  { background: #fef9c3; color: #854d0e; }
+.badge-disabled { background: #f3f4f6; color: #6b7280; }
+.badge-mode     { background: #e0f2fe; color: #0369a1; }
+
+.text-muted { color: #bbb; font-size: 12px; }
 
 /* ---- CARDS ---- */
 .card-container {
@@ -206,6 +212,10 @@ tbody td {
 .card:hover {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
+}
+
+.card-link {
+    cursor: pointer;
 }
 
 .card-disabled {
@@ -238,6 +248,55 @@ tbody td {
 
 .card-info p:last-child {
     margin-bottom: 0;
+}
+
+.back-btn {
+    color: #666;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0.3em 0.75em;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.back-btn:hover {
+    background: #f0f0f0;
+}
+
+.user-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    background: #f8f8f8;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 0.6em 1em;
+    margin-bottom: 1em;
+    font-size: 13px;
+    flex-wrap: wrap;
+}
+
+.divider {
+    color: #ccc;
+}
+
+.btn-delete {
+    background: none;
+    border: 1px solid #fca5a5;
+    color: #b91c1c;
+    border-radius: 6px;
+    padding: 0.2em 0.6em;
+    font-size: 11px;
+    font-family: 'Roboto', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.btn-delete:hover {
+    background: #fee2e2;
 }
 
 .label {

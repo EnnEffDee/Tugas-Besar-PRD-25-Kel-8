@@ -30,6 +30,8 @@
                             <th>PIN</th>
                             <th>Status</th>
                             <th>Mode</th>
+                            <th>Alasan</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="log-body">
@@ -50,19 +52,39 @@
                         return;
                     }
 
-                    tbody.innerHTML = [...data].reverse().map(row => `
-                        <tr class="${row.status === 'VALID' ? 'row-valid' : 'row-invalid'}">
+                    const alasanBadge = {
+                        'MASUK_GANDA':   'badge-warning',
+                        'USER_DISABLED': 'badge-disabled',
+                        'PIN_TIDAK_ADA': 'badge-invalid',
+                    };
+
+                    tbody.innerHTML = [...data].reverse().map(row => {
+                        const alasan = row.alasan || '-';
+                        const alasanClass = alasanBadge[alasan] || '';
+                        const rowClass = alasan === 'MASUK_GANDA' ? 'row-warning'
+                                       : row.status === 'VALID'   ? 'row-valid'
+                                       : 'row-invalid';
+                        return `
+                        <tr class="${rowClass}" data-ts="${row.timestamp}">
                             <td class="mono">${row.timestamp}</td>
                             <td class="mono">${row.device}</td>
                             <td class="mono">${row.pin}</td>
                             <td><span class="badge badge-${row.status === 'VALID' ? 'valid' : 'invalid'}">${row.status}</span></td>
                             <td><span class="badge badge-mode">${row.mode}</span></td>
-                        </tr>
-                    `).join('');
+                            <td>${alasan !== '-' ? `<span class="badge ${alasanClass}">${alasan}</span>` : '<span class="text-muted">-</span>'}</td>
+                            <td><button class="btn-delete" onclick="deleteLog('${row.timestamp}')">Hapus</button></td>
+                        </tr>`;
+                    }).join('');
                 } catch (e) {
                     document.getElementById('log-body').innerHTML =
                         '<tr><td colspan="5" class="loading">Gagal memuat data.</td></tr>';
                 }
+            }
+
+            async function deleteLog(timestamp) {
+                if (!confirm('Hapus data ini?')) return;
+                await fetch('/api/logs/' + encodeURIComponent(timestamp), { method: 'DELETE' });
+                fetchLogs();
             }
 
             fetchLogs();

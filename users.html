@@ -27,8 +27,12 @@
         <script>
             async function fetchUsers() {
                 try {
-                    const res = await fetch('/api/users');
-                    const data = await res.json();
+                    const [usersRes, logsRes] = await Promise.all([
+                        fetch('/api/users'),
+                        fetch('/api/logs'),
+                    ]);
+                    const data = await usersRes.json();
+                    const logs = await logsRes.json();
                     const container = document.getElementById('user-cards');
 
                     const entries = Object.entries(data);
@@ -37,13 +41,56 @@
                         return;
                     }
 
-                    container.innerHTML = entries.map(([pin, user]) => `
-                        <div class="card ${user.enabled ? '' : 'card-disabled'}">
+                    // Kelompokkan log per PIN
+                    const logsByPin = {};
+                    logs.forEach(row => {
+                        if (!logsByPin[row.pin]) logsByPin[row.pin] = [];
+                        logsByPin[row.pin].push(row);
+                    });
+
+                    container.innerHTML = entries.map(([pin, user]) => {
+                        const userLogs = logsByPin[pin] || [];
+
+                        let badgeClass, badgeLabel;
+                        if (!user.enabled) {
+                            badgeClass = 'badge-disabled';
+                            badgeLabel = 'Nonaktif';
+                        } else if (userLogs.length === 0) {
+                            badgeClass = 'badge-mode';
+                            badgeLabel = 'Belum Ada Data';
+                        } else {
+                            // Cari timestamp VALID MASUK terakhir
+                            let lastMasukTs = null;
+                            let lastKeluarTs = null;
+                            userLogs.forEach(row => {
+                                if (row.status === 'VALID' && row.mode === 'MASUK')  lastMasukTs  = row.timestamp;
+                                if (row.status === 'VALID' && row.mode === 'KELUAR') lastKeluarTs = row.timestamp;
+                            });
+
+                            const inside = lastMasukTs && (!lastKeluarTs || lastMasukTs > lastKeluarTs);
+
+                            // Cek MASUK_GANDA setelah MASUK terakhir (saat masih di dalam)
+                            const hasMasukGanda = inside && userLogs.some(row =>
+                                row.alasan === 'MASUK_GANDA' && lastMasukTs && row.timestamp > lastMasukTs
+                            );
+
+                            if (hasMasukGanda) {
+                                badgeClass = 'badge-warning';
+                                badgeLabel = 'INVALID';
+                            } else if (inside) {
+                                badgeClass = 'badge-valid';
+                                badgeLabel = 'Dalam Kos';
+                            } else {
+                                badgeClass = 'badge-mode';
+                                badgeLabel = 'Keluar Kos';
+                            }
+                        }
+
+                        return `
+                        <div class="card ${user.enabled ? '' : 'card-disabled'} card-link" onclick="window.location='/tabel?pin=${pin}'">
                             <div class="card-header">
                                 <span class="card-name">${user.name}</span>
-                                <span class="badge ${user.enabled ? 'badge-valid' : 'badge-invalid'}">
-                                    ${user.enabled ? 'Aktif' : 'Nonaktif'}
-                                </span>
+                                <span class="badge ${badgeClass}">${badgeLabel}</span>
                             </div>
                             <div class="card-info">
                                 <p>
@@ -55,8 +102,8 @@
                                     <span class="mono">${pin}</span>
                                 </p>
                             </div>
-                        </div>
-                    `).join('');
+                        </div>`;
+                    }).join('');
                 } catch (e) {
                     document.getElementById('user-cards').innerHTML =
                         '<p class="loading">Gagal memuat data.</p>';
