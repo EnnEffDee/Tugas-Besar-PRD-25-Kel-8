@@ -6,6 +6,8 @@ int buzzerPin = 8;
 int relayPin = 7;
 
 unsigned long start;
+unsigned long inputStart = 0;
+const unsigned long INPUT_TIMEOUT = 15000; // 15 detik
 int i;
 int input[6];
 int count = 0;
@@ -119,13 +121,28 @@ void loop() {
   }
 
   char key = keypad.getKey();
+  // Timeout input PIN setelah tekan B/C
+  if (!status && inputStart > 0 && millis() - inputStart > INPUT_TIMEOUT) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("TIMEOUT");
+    tone(buzzerPin, 200, 600);
+    delay(1500);
+    lcd.clear();
+    count = 0;
+    pinstr = "";
+    access_mode = "";
+    inputStart = 0;
+    status = true;
+  }
+
   if (key == 'B') {
     access_mode = "MASUK";
     status = false;
     count = 0;
+    inputStart = millis();
 
     lcd.clear();
-
     lcd.setCursor(0, 0);
     lcd.print("Masukkan PIN");
     lcd.setCursor(0, 1);
@@ -138,14 +155,15 @@ void loop() {
     access_mode = "KELUAR";
     status = false;
     count = 0;
+    inputStart = millis();
 
     lcd.clear();
-
     lcd.setCursor(0, 0);
     lcd.print("Masukkan PIN");
     lcd.setCursor(0, 1);
     lcd.print("MODE: ");
     lcd.print(access_mode);
+
     delay(1000);
     lcd.clear();
   } else if (key == 'A' && count > 0) {

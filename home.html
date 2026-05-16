@@ -1,59 +1,94 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=, initial-scale=1.0" />
-        <title>Home - serial logger</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Home - Serial Logger</title>
         <link rel="stylesheet" href="home.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
     </head>
     <body id="viewport">
         <div id="nav">
             <nav class="navbar">
-                <a class="nav-element">Home</a>
-                <a class="nav-element">Users</a>
+                <a class="nav-element active" href="/">Home</a>
+                <a class="nav-element" href="/users">Users</a>
             </nav>
             <hr class="line" />
         </div>
         <div id="body">
-            Taruh konten di sini.
-            <h1>Ini adalah header 1.</h1>
-            <h2>Ini adalah header 2</h2>
-            <h3>Ini adalah header 3</h3>
-            <h4>Ini adalah header 4</h4>
-            <h5>dst..</h5>
-            <p>Ini adalah sebuah paragraf.</p>
-            <div class="card-container">
-                <div class="card">
-                    <p><span>Nama</span> Orang Pintar 9000</p>
-                    <p><span>NIM</span> 67</p>
-                    <p><span>No. Telp</span> +62 843 9323 1112</p>
-                </div>
-                <div class="card">
-                    <p><span>Nama</span> Orang Pintar 9000</p>
-                    <p><span>NIM</span> 67</p>
-                    <p><span>No. Telp</span> +62 843 9323 1112</p>
-                </div>
-                <div class="card">
-                    <p><span>Nama</span> Orang Pintar 9000</p>
-                    <p><span>NIM</span> 67</p>
-                    <p><span>No. Telp</span> +62 843 9323 1112</p>
-                </div>
-                <div class="card">
-                    <p><span>Nama</span> Orang Pintar 9000</p>
-                    <p><span>NIM</span> 67</p>
-                    <p><span>No. Telp</span> +62 843 9323 1112</p>
-                </div>
-                <div class="card">
-                    <p><span>Nama</span> Orang Pintar 9000</p>
-                    <p><span>NIM</span> 67</p>
-                    <p><span>No. Telp</span> +62 843 9323 1112</p>
-                </div>
-                <div class="card">
-                    <p><span>Nama</span> Orang Pintar 9000</p>
-                    <p><span>NIM</span> 67</p>
-                    <p><span>No. Telp</span> +62 843 9323 1112</p>
-                </div>
+            <div class="page-header">
+                <h2 class="page-title">Access Log</h2>
+                <span class="refresh-indicator">&#9679; Live</span>
+            </div>
+            <div class="table-wrapper">
+                <table id="log-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Device</th>
+                            <th>PIN</th>
+                            <th>Status</th>
+                            <th>Mode</th>
+                            <th>Keterangan</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-body">
+                        <tr><td colspan="5" class="loading">Memuat data...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
+        <script>
+            async function fetchLogs() {
+                try {
+                    const res = await fetch('/api/logs');
+                    const data = await res.json();
+                    const tbody = document.getElementById('log-body');
+
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="loading">Belum ada data.</td></tr>';
+                        return;
+                    }
+
+                    const alasanBadge = {
+                        'MASUK_GANDA':   'badge-warning',
+                        'USER_DISABLED': 'badge-disabled',
+                        'PIN_TIDAK_ADA': 'badge-invalid',
+                    };
+
+                    tbody.innerHTML = [...data].reverse().map(row => {
+                        const alasan = row.alasan || '-';
+                        const alasanClass = alasanBadge[alasan] || '';
+                        const rowClass = alasan === 'MASUK_GANDA' ? 'row-warning'
+                                       : row.status === 'VALID'   ? 'row-valid'
+                                       : 'row-invalid';
+                        return `
+                        <tr class="${rowClass}" data-ts="${row.timestamp}">
+                            <td class="mono">${row.timestamp}</td>
+                            <td class="mono">${row.device}</td>
+                            <td class="mono">${row.pin}</td>
+                            <td><span class="badge badge-${row.status === 'VALID' ? 'valid' : 'invalid'}">${row.status}</span></td>
+                            <td><span class="badge badge-mode">${row.mode}</span></td>
+                            <td>${alasan !== '-' ? `<span class="badge ${alasanClass}">${alasan}</span>` : '<span class="text-muted">-</span>'}</td>
+                            <td><button class="btn-delete" onclick="deleteLog('${row.timestamp}')">Hapus</button></td>
+                        </tr>`;
+                    }).join('');
+                } catch (e) {
+                    document.getElementById('log-body').innerHTML =
+                        '<tr><td colspan="5" class="loading">Gagal memuat data.</td></tr>';
+                }
+            }
+
+            async function deleteLog(timestamp) {
+                if (!confirm('Hapus data ini?')) return;
+                await fetch('/api/logs/' + encodeURIComponent(timestamp), { method: 'DELETE' });
+                fetchLogs();
+            }
+
+            fetchLogs();
+            setInterval(fetchLogs, 5000);
+        </script>
     </body>
 </html>

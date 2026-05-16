@@ -17,6 +17,19 @@ def load_users():
     except:
         return {}
 
+def last_valid_mode(pin):
+    """Return mode of the last VALID log entry for this pin, or None."""
+    try:
+        with open(csv_file, "r") as f:
+            reader = csv.DictReader(f)
+            last = None
+            for row in reader:
+                if row["pin"] == pin and row["status"] == "VALID":
+                    last = row["mode"]
+            return last
+    except:
+        return None
+
 try:
     ser = serial.Serial(PORT, BAUD, timeout=1)
     time.sleep(2)  # wait for Arduino reset
@@ -40,18 +53,22 @@ while True:
 
                 users = load_users()
 
+                alasan = "-"
                 valid = False
 
-                if pin in users:                                    # PIN ada di JSON?
-                    if isinstance(users[pin], dict):
-                        valid = users[pin].get("enabled", False)
-                    else:
-                        valid = users[pin]
-
-                if (valid):
-                    status = "VALID"
+                if pin not in users:
+                    alasan = "PIN_TIDAK_ADA"
                 else:
-                    status = "INVALID"
+                    user_data = users[pin]
+                    enabled = user_data.get("enabled", False) if isinstance(user_data, dict) else user_data
+                    if not enabled:
+                        alasan = "USER_DISABLED"
+                    elif mode == "MASUK" and last_valid_mode(pin) == "MASUK":
+                        alasan = "MASUK_GANDA"
+                    else:
+                        valid = True
+
+                status = "VALID" if valid else "INVALID"
 
                 with open(csv_file, 'a', newline='') as f:
                     writer = csv.writer(f)
@@ -60,7 +77,8 @@ while True:
                         device,
                         pin,
                         status,
-                        mode
+                        mode,
+                        alasan
                     ])
                 ser.write((status + "\n").encode())
                 print(f"{pin} -> {status}")

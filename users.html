@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Users - Serial Logger</title>
+        <link rel="stylesheet" href="home.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    </head>
+    <body id="viewport">
+        <div id="nav">
+            <nav class="navbar">
+                <a class="nav-element" href="/">Home</a>
+                <a class="nav-element active" href="/users">Users</a>
+            </nav>
+            <hr class="line" />
+        </div>
+        <div id="body">
+            <div class="page-header">
+                <h2 class="page-title">Daftar User</h2>
+            </div>
+            <div class="card-container" id="user-cards">
+                <p class="loading">Memuat data...</p>
+            </div>
+        </div>
+        <script>
+            function formatTs(ts) {
+                if (!ts) return '-';
+                const d = new Date(ts);
+                const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+                const jam = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                return `${d.getDate()} ${months[d.getMonth()]}, ${jam}`;
+            }
+
+            async function fetchUsers() {
+                try {
+                    const [usersRes, logsRes] = await Promise.all([
+                        fetch('/api/users'),
+                        fetch('/api/logs'),
+                    ]);
+                    const data = await usersRes.json();
+                    const logs = await logsRes.json();
+                    const container = document.getElementById('user-cards');
+
+                    // Filter hanya user aktif
+                    const entries = Object.entries(data).filter(([, user]) => user.enabled);
+                    if (entries.length === 0) {
+                        container.innerHTML = '<p class="loading">Belum ada user aktif.</p>';
+                        return;
+                    }
+
+                    // Kelompokkan log per PIN
+                    const logsByPin = {};
+                    logs.forEach(row => {
+                        if (!logsByPin[row.pin]) logsByPin[row.pin] = [];
+                        logsByPin[row.pin].push(row);
+                    });
+
+                    container.innerHTML = entries.map(([pin, user]) => {
+                        const userLogs = logsByPin[pin] || [];
+
+                        let badgeClass, badgeLabel;
+                        if (!user.enabled) {
+                            badgeClass = 'badge-disabled';
+                            badgeLabel = 'Nonaktif';
+                        } else if (userLogs.length === 0) {
+                            badgeClass = 'badge-mode';
+                            badgeLabel = 'Belum Ada Data';
+                        } else {
+                            // Cari timestamp VALID MASUK terakhir
+                            let lastMasukTs = null;
+                            let lastKeluarTs = null;
+                            userLogs.forEach(row => {
+                                if (row.status === 'VALID' && row.mode === 'MASUK')  lastMasukTs  = row.timestamp;
+                                if (row.status === 'VALID' && row.mode === 'KELUAR') lastKeluarTs = row.timestamp;
+                            });
+
+                            const inside = lastMasukTs && (!lastKeluarTs || lastMasukTs > lastKeluarTs);
+
+                            // Cek MASUK_GANDA setelah MASUK terakhir (saat masih di dalam)
+                            const hasMasukGanda = inside && userLogs.some(row =>
+                                row.alasan === 'MASUK_GANDA' && lastMasukTs && row.timestamp > lastMasukTs
+                            );
+
+                            if (hasMasukGanda) {
+                                badgeClass = 'badge-warning';
+                                badgeLabel = 'INVALID';
+                            } else if (inside) {
+                                badgeClass = 'badge-valid';
+                                badgeLabel = 'Dalam Kos';
+                            } else {
+                                badgeClass = 'badge-mode';
+                                badgeLabel = 'Luar Kos';
+                            }
+                        }
+
+                        // Cari timestamp masuk & keluar terakhir
+                        let tsMasuk = null, tsKeluar = null;
+                        userLogs.forEach(row => {
+                            if (row.status === 'VALID' && row.mode === 'MASUK')  tsMasuk  = row.timestamp;
+                            if (row.status === 'VALID' && row.mode === 'KELUAR') tsKeluar = row.timestamp;
+                        });
+
+                        // Tampilkan keterangan waktu sesuai status
+                        let keteranganWaktu = '';
+                        if (badgeLabel === 'Dalam Kos' || badgeLabel === 'INVALID') {
+                            keteranganWaktu = `<p><span class="label">Masuk</span><span class="mono">${formatTs(tsMasuk)}</span></p>`;
+                        } else if (badgeLabel === 'Luar Kos') {
+                            keteranganWaktu = `<p><span class="label">Keluar</span><span class="mono">${formatTs(tsKeluar)}</span></p>`;
+                        }
+
+                        return `
+                        <div class="card card-link" onclick="window.location='/tabel?pin=${pin}'">
+                            <div class="card-header">
+                                <span class="card-name">${user.name}</span>
+                                <span class="badge ${badgeClass}">${badgeLabel}</span>
+                            </div>
+                            <div class="card-info">
+                                <p>
+                                    <span class="label">No. Telp</span>
+                                    <span class="mono">${user.no_telp}</span>
+                                </p>
+                                <p>
+                                    <span class="label">PIN</span>
+                                    <span class="mono">${pin}</span>
+                                </p>
+                                ${keteranganWaktu}
+                            </div>
+                        </div>`;
+                    }).join('');
+                } catch (e) {
+                    document.getElementById('user-cards').innerHTML =
+                        '<p class="loading">Gagal memuat data.</p>';
+                }
+            }
+
+            fetchUsers();
+        </script>
+    </body>
+</html>
