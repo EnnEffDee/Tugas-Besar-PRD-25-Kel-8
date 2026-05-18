@@ -4,7 +4,7 @@ import csv
 import json
 from datetime import datetime
 
-PORT = "/dev/ttyUSB0"
+PORT = "COM3"
 BAUD = 9600
 
 csv_file = "log.csv"

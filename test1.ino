@@ -7,7 +7,7 @@ int relayPin = 7;
 
 unsigned long start;
 unsigned long inputStart = 0;
-const unsigned long INPUT_TIMEOUT = 15000; // 15 detik
+const unsigned long INPUT_TIMEOUT = 15000;  // 15 detik
 int i;
 int input[6];
 int count = 0;
@@ -52,6 +52,7 @@ void setup() {
   Serial.begin(9600);
   lcd.init();
   lcd.backlight();
+  lcd.clear();
   lcd.setCursor(0, 0);
 }
 
@@ -121,6 +122,10 @@ void loop() {
   }
 
   char key = keypad.getKey();
+
+  if (key != NO_KEY && !status) {
+    inputStart = millis();
+  }
   // Timeout input PIN setelah tekan B/C
   if (!status && inputStart > 0 && millis() - inputStart > INPUT_TIMEOUT) {
     lcd.clear();
@@ -149,7 +154,7 @@ void loop() {
     lcd.print("MODE: ");
     lcd.print(access_mode);
 
-    delay(1000);
+    delay(2000);
     lcd.clear();
   } else if (key == 'C') {
     access_mode = "KELUAR";
