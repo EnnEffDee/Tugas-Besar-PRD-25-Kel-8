@@ -55,13 +55,14 @@
                     const alasanBadge = {
                         'MASUK_GANDA':   'badge-warning',
                         'USER_DISABLED': 'badge-disabled',
+                        'KELUAR_GANDA': 'badge-warning',
                         'PIN_TIDAK_ADA': 'badge-invalid',
                     };
 
                     tbody.innerHTML = [...data].reverse().map(row => {
                         const alasan = row.alasan || '-';
                         const alasanClass = alasanBadge[alasan] || '';
-                        const rowClass = alasan === 'MASUK_GANDA' ? 'row-warning'
+                        const rowClass = alasan === 'MASUK_GANDA' || alasan === 'KELUAR_GANDA' ? 'row-warning'
                                        : row.status === 'VALID'   ? 'row-valid'
                                        : 'row-invalid';
                         return `

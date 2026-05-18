@@ -85,13 +85,14 @@
 
                 const alasanBadge = {
                     'MASUK_GANDA':   'badge-warning',
+                    'KELUAR_GANDA': 'badge-warning',
                     'USER_DISABLED': 'badge-disabled',
                     'PIN_TIDAK_ADA': 'badge-invalid',
                 };
 
                 tbody.innerHTML = [...userLogs].reverse().map(row => {
                     const alasan = row.alasan || '-';
-                    const rowClass = alasan === 'MASUK_GANDA' ? 'row-warning'
+                    const rowClass = alasan === 'MASUK_GANDA' || alasan === 'KELUAR_GANDA' ? 'row-warning'
                                    : row.status === 'VALID'   ? 'row-valid'
                                    : 'row-invalid';
                     const alasanClass = alasanBadge[alasan] || '';

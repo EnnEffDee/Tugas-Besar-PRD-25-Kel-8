@@ -65,6 +65,10 @@ while True:
                         alasan = "USER_DISABLED"
                     elif mode == "MASUK" and last_valid_mode(pin) == "MASUK":
                         alasan = "MASUK_GANDA"
+                        valid = True
+                    elif mode == "KELUAR" and last_valid_mode(pin) == "KELUAR":
+                        alasan = "KELUAR_GANDA"
+                        valid = True
                     else:
                         valid = True
 
