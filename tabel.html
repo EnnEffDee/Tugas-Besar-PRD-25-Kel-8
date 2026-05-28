@@ -6,7 +6,10 @@
         <title>Log User - Serial Logger</title>
         <link rel="stylesheet" href="home.css" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
     </head>
     <body id="viewport">
         <div id="nav">
@@ -33,12 +36,14 @@
                             <th>Device</th>
                             <th>Status</th>
                             <th>Mode</th>
-                            <th>Alasan</th>
-                            <th></th>
+                            <th>Keterangan</th>
+                            <th>Hapus/Toggle</th>
                         </tr>
                     </thead>
                     <tbody id="log-body">
-                        <tr><td colspan="5" class="loading">Memuat data...</td></tr>
+                        <tr>
+                            <td colspan="5" class="loading">Memuat data...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -46,71 +51,138 @@
 
         <script>
             const params = new URLSearchParams(window.location.search);
-            const pin = params.get('pin');
+            const pin = params.get("pin");
 
-            if (!pin) window.location = '/users';
+            if (!pin) window.location = "/users";
 
             async function fetchData() {
                 const [logsRes, usersRes] = await Promise.all([
-                    fetch('/api/logs'),
-                    fetch('/api/users'),
+                    fetch("/api/logs"),
+                    fetch("/api/users"),
                 ]);
                 const allLogs = await logsRes.json();
-                const users   = await usersRes.json();
+                const users = await usersRes.json();
 
                 const user = users[pin];
                 if (user) {
-                    document.getElementById('page-title').textContent = 'Log — ' + user.name;
-                    document.title = 'Log ' + user.name + ' - Serial Logger';
-                    document.getElementById('user-info-bar').innerHTML = `
+                    document.getElementById("page-title").textContent =
+                        "Log — " + user.name;
+                    document.title = "Log " + user.name + " - Serial Logger";
+                    document.getElementById("user-info-bar").innerHTML = `
                         <span class="label">PIN</span>
                         <span class="mono">${pin}</span>
                         <span class="divider">|</span>
                         <span class="label">No. Telp</span>
                         <span class="mono">${user.no_telp}</span>
                         <span class="divider">|</span>
-                        <span class="badge ${user.enabled ? 'badge-valid' : 'badge-invalid'}">
-                            ${user.enabled ? 'Dalam Kos' : 'Keluar Kos'}
+                        <span class="badge ${user.enabled ? "badge-valid" : "badge-invalid"}">
+                        ${user.enabled ? "Dalam Kos" : "Keluar Kos"}
                         </span>
-                    `;
+                        `;
                 }
 
-                const userLogs = allLogs.filter(row => row.pin === pin);
-                const tbody = document.getElementById('log-body');
+                const userLogs = allLogs.filter((row) => row.pin === pin);
+                const tbody = document.getElementById("log-body");
 
                 if (userLogs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="loading">Belum ada data untuk user ini.</td></tr>';
+                    tbody.innerHTML =
+                        '<tr><td colspan="5" class="loading">Belum ada data untuk user ini.</td></tr>';
                     return;
                 }
 
                 const alasanBadge = {
-                    'MASUK_GANDA':   'badge-warning',
-                    'KELUAR_GANDA': 'badge-warning',
-                    'USER_DISABLED': 'badge-disabled',
-                    'PIN_TIDAK_ADA': 'badge-invalid',
+                    MASUK_GANDA: "badge-warning",
+                    KELUAR_GANDA: "badge-warning",
+                    USER_DISABLED: "badge-disabled",
+                    PIN_TIDAK_ADA: "badge-invalid",
                 };
 
-                tbody.innerHTML = [...userLogs].reverse().map(row => {
-                    const alasan = row.alasan || '-';
-                    const rowClass = alasan === 'MASUK_GANDA' || alasan === 'KELUAR_GANDA' ? 'row-warning'
-                                   : row.status === 'VALID'   ? 'row-valid'
-                                   : 'row-invalid';
-                    const alasanClass = alasanBadge[alasan] || '';
-                    return `
-                    <tr class="${rowClass}">
-                        <td class="mono">${row.timestamp}</td>
-                        <td class="mono">${row.device}</td>
-                        <td><span class="badge badge-${row.status === 'VALID' ? 'valid' : 'invalid'}">${row.status}</span></td>
-                        <td><span class="badge badge-mode">${row.mode}</span></td>
-                        <td>${alasan !== '-' ? `<span class="badge ${alasanClass}">${alasan}</span>` : '<span class="text-muted">-</span>'}</td>
-                        <td><button class="btn-delete" onclick="deleteLog('${row.timestamp}')">Hapus</button></td>
-                    </tr>`;
-                }).join('');
+                tbody.innerHTML = [...userLogs]
+                    .reverse()
+                    .map((row) => {
+                        const alasan = row.alasan || "-";
+                        const rowClass =
+                            alasan === "MASUK_GANDA" ||
+                            alasan === "KELUAR_GANDA"
+                                ? "row-warning"
+                                : row.status === "VALID"
+                                  ? "row-valid"
+                                  : "row-invalid";
+                        const alasanClass = alasanBadge[alasan] || "";
+                        return `
+                            <tr class="${rowClass}">
+                            <td class="mono">${row.timestamp}</td>
+                            <td class="mono">${row.device}</td>
+                            <td><span class="badge badge-${row.status === "VALID" ? "valid" : "invalid"}">${row.status}</span></td>
+                            <td>
+                            <span class="badge ${
+                                row.mode === "MASUK"
+                                    ? "badge-masuk"
+                                    : "badge-keluar"
+                            }">
+                            ${row.mode}
+                            </span>
+                            </td>
+                            <td>${alasan !== "-" ? `<span class="badge ${alasanClass}">${alasan}</span>` : '<span class="text-muted">-</span>'}</td>
+                            <td>
+                            <div class="action-group">
+                            <button class="btn-delete" onclick="deleteLog('${row.timestamp}')">
+                            Hapus
+                            </button>
+
+                            ${
+                                row.mode === "MASUK"
+                                    ? `
+                                    <button
+                                class="btn-toggle ${row.alasan === "MASUK_GANDA" ? "active-warning" : ""}"
+                                onclick="toggleAnomaly('${row.timestamp}')">
+                                    ${
+                                        row.alasan === "MASUK_GANDA"
+                                            ? "Unset Masuk Ganda"
+                                            : "Set Masuk Ganda"
+                                    }
+                                    </button>
+                                    `
+                                    : ""
+                            }
+
+                        ${
+                            row.mode === "KELUAR"
+                                ? `
+                                <button
+                            class="btn-toggle ${row.alasan === "KELUAR_GANDA" ? "active-warning" : ""}"
+                            onclick="toggleAnomaly('${row.timestamp}')">
+                                ${
+                                    row.alasan === "KELUAR_GANDA"
+                                        ? "Unset Keluar Ganda"
+                                        : "Set Keluar Ganda"
+                                }
+                                </button>
+                                `
+                                : ""
+                        }
+                            </div>
+                            </td>
+                            </tr>`;
+                    })
+                    .join("");
             }
 
             async function deleteLog(timestamp) {
-                if (!confirm('Hapus data ini?')) return;
-                await fetch('/api/logs/' + encodeURIComponent(timestamp), { method: 'DELETE' });
+                if (!confirm("Hapus data ini?")) return;
+                await fetch("/api/logs/" + encodeURIComponent(timestamp), {
+                    method: "DELETE",
+                });
+                fetchData();
+            }
+            async function toggleAnomaly(timestamp) {
+                await fetch(
+                    "/api/logs/toggle/" + encodeURIComponent(timestamp),
+                    {
+                        method: "PATCH",
+                    },
+                );
+
                 fetchData();
             }
 

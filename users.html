@@ -6,7 +6,10 @@
         <title>Users - Serial Logger</title>
         <link rel="stylesheet" href="home.css" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
     </head>
     <body id="viewport">
         <div id="nav">
@@ -26,33 +29,50 @@
         </div>
         <script>
             function formatTs(ts) {
-                if (!ts) return '-';
+                if (!ts) return "-";
                 const d = new Date(ts);
-                const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-                const jam = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                const months = [
+                    "Jan",
+                    "Feb",
+                    "Mar",
+                    "Apr",
+                    "Mei",
+                    "Jun",
+                    "Jul",
+                    "Agu",
+                    "Sep",
+                    "Okt",
+                    "Nov",
+                    "Des",
+                ];
+                const jam =
+                    String(d.getHours()).padStart(2, "0") +
+                    ":" +
+                    String(d.getMinutes()).padStart(2, "0");
                 return `${d.getDate()} ${months[d.getMonth()]}, ${jam}`;
             }
 
             async function fetchUsers() {
                 try {
                     const [usersRes, logsRes] = await Promise.all([
-                        fetch('/api/users'),
-                        fetch('/api/logs'),
+                        fetch("/api/users"),
+                        fetch("/api/logs"),
                     ]);
                     const data = await usersRes.json();
                     const logs = await logsRes.json();
-                    const container = document.getElementById('user-cards');
+                    const container = document.getElementById("user-cards");
 
-                    // Filter hanya user aktif
-                    const entries = Object.entries(data).filter(([, user]) => user.enabled);
+                    const entries = Object.entries(data).filter(
+                        ([, user]) => user.enabled,
+                    );
                     if (entries.length === 0) {
-                        container.innerHTML = '<p class="loading">Belum ada user aktif.</p>';
+                        container.innerHTML =
+                            '<p class="loading">Belum ada user aktif.</p>';
                         return;
                     }
 
-                    // Kelompokkan log per PIN
                     const logsByPin = {};
-                    logs.forEach(row => {
+                    logs.forEach((row) => {
                         if (!logsByPin[row.pin]) logsByPin[row.pin] = [];
                         logsByPin[row.pin].push(row);
                     });
@@ -61,76 +81,101 @@
                         const userLogs = logsByPin[pin] || [];
 
                         let badgeClass, badgeLabel;
+                        let keteranganWaktu = "";
+
                         if (!user.enabled) {
-                            badgeClass = 'badge-disabled';
-                            badgeLabel = 'Nonaktif';
+                            badgeClass = "badge-disabled";
+                            badgeLabel = "Nonaktif";
                         } else if (userLogs.length === 0) {
-                            badgeClass = 'badge-mode';
-                            badgeLabel = 'Belum Ada Data';
+                            badgeClass = "badge-mode";
+                            badgeLabel = "Belum Ada Data";
                         } else {
-                            // Cari timestamp VALID MASUK terakhir
                             let lastMasukTs = null;
                             let lastKeluarTs = null;
-                            userLogs.forEach(row => {
-                                if (row.status === 'VALID' && row.mode === 'MASUK')  lastMasukTs  = row.timestamp;
-                                if (row.status === 'VALID' && row.mode === 'KELUAR') lastKeluarTs = row.timestamp;
+
+                            userLogs.forEach((row) => {
+                                if (
+                                    row.status === "VALID" &&
+                                    row.mode === "MASUK"
+                                )
+                                    lastMasukTs = row.timestamp;
+
+                                if (
+                                    row.status === "VALID" &&
+                                    row.mode === "KELUAR"
+                                )
+                                    lastKeluarTs = row.timestamp;
                             });
 
-                            const inside = lastMasukTs && (!lastKeluarTs || lastMasukTs > lastKeluarTs);
+                            const inside =
+                                lastMasukTs &&
+                                (!lastKeluarTs || lastMasukTs > lastKeluarTs);
 
-                            // Cek MASUK_GANDA setelah MASUK terakhir (saat masih di dalam)
-                            const hasMasukGanda = inside && userLogs.some(row =>
-                                row.alasan === 'MASUK_GANDA' && lastMasukTs && row.timestamp > lastMasukTs
-                            );
+                            const lastAnomaly = [...userLogs]
+                                .reverse()
+                                .find(
+                                    (row) =>
+                                        row.alasan === "MASUK_GANDA" ||
+                                        row.alasan === "KELUAR_GANDA",
+                                );
 
-                            if (hasMasukGanda) {
-                                badgeClass = 'badge-warning';
-                                badgeLabel = 'INVALID';
+                            if (lastAnomaly) {
+                                badgeClass = "badge-warning";
+                                badgeLabel =
+                                    lastAnomaly.alasan === "MASUK_GANDA"
+                                        ? "MASUK GANDA"
+                                        : "KELUAR GANDA";
+
+                                keteranganWaktu = `
+                                    <p>
+                                    <span class="label">Anomali</span>
+                                    <span class="mono">${formatTs(lastAnomaly.timestamp)}</span>
+                                    </p>`;
                             } else if (inside) {
-                                badgeClass = 'badge-valid';
-                                badgeLabel = 'Dalam Kos';
+                                badgeClass = "badge-masuk";
+                                badgeLabel = "Dalam Kos";
+
+                                keteranganWaktu = `
+                                    <p>
+                                    <span class="label">Masuk</span>
+                                    <span class="mono">${formatTs(lastMasukTs)}</span>
+                                    </p>`;
                             } else {
-                                badgeClass = 'badge-mode';
-                                badgeLabel = 'Luar Kos';
+                                badgeClass = "badge-keluar";
+                                badgeLabel = "Luar Kos";
+
+                                keteranganWaktu = `
+                                    <p>
+                                    <span class="label">Keluar</span>
+                                    <span class="mono">${formatTs(lastKeluarTs)}</span>
+                                    </p>`;
                             }
                         }
 
-                        // Cari timestamp masuk & keluar terakhir
-                        let tsMasuk = null, tsKeluar = null;
-                        userLogs.forEach(row => {
-                            if (row.status === 'VALID' && row.mode === 'MASUK')  tsMasuk  = row.timestamp;
-                            if (row.status === 'VALID' && row.mode === 'KELUAR') tsKeluar = row.timestamp;
-                        });
-
-                        // Tampilkan keterangan waktu sesuai status
-                        let keteranganWaktu = '';
-                        if (badgeLabel === 'Dalam Kos' || badgeLabel === 'INVALID') {
-                            keteranganWaktu = `<p><span class="label">Masuk</span><span class="mono">${formatTs(tsMasuk)}</span></p>`;
-                        } else if (badgeLabel === 'Luar Kos') {
-                            keteranganWaktu = `<p><span class="label">Keluar</span><span class="mono">${formatTs(tsKeluar)}</span></p>`;
-                        }
-
                         return `
-                        <div class="card card-link" onclick="window.location='/tabel?pin=${pin}'">
+                            <div class="card card-link" onclick="window.location='/tabel?pin=${pin}'">
                             <div class="card-header">
-                                <span class="card-name">${user.name}</span>
-                                <span class="badge ${badgeClass}">${badgeLabel}</span>
+                            <span class="card-name">${user.name}</span>
+                            <span class="badge ${badgeClass}">${badgeLabel}</span>
                             </div>
+
                             <div class="card-info">
-                                <p>
-                                    <span class="label">No. Telp</span>
-                                    <span class="mono">${user.no_telp}</span>
-                                </p>
-                                <p>
-                                    <span class="label">PIN</span>
-                                    <span class="mono">${pin}</span>
-                                </p>
-                                ${keteranganWaktu}
+                            <p>
+                            <span class="label">No. Telp</span>
+                            <span class="mono">${user.no_telp}</span>
+                            </p>
+
+                            <p>
+                            <span class="label">PIN</span>
+                            <span class="mono">${pin}</span>
+                            </p>
+
+                            ${keteranganWaktu}
                             </div>
-                        </div>`;
-                    }).join('');
+                            </div>`;
+                    });
                 } catch (e) {
-                    document.getElementById('user-cards').innerHTML =
+                    document.getElementById("user-cards").innerHTML =
                         '<p class="loading">Gagal memuat data.</p>';
                 }
             }

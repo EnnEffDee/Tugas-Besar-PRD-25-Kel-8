@@ -80,6 +80,8 @@ void loop() {
         delay(1500);
         count = 0;
         pinstr = "";
+        status = true;
+        access_mode = "";
         return;
       }
     }
@@ -101,6 +103,10 @@ void loop() {
         tone(buzzerPin, 500, 600);
         delay(650);
       }
+      
+      digitalWrite(relayPin, HIGH);
+      delay(5000);
+      digitalWrite(relayPin, LOW);
     } else {
       lcd.clear();
       lcd.setCursor(0, 0);
@@ -114,11 +120,10 @@ void loop() {
     lcd.clear();
     status = true;
     count = 0;
+    for (int i = 0; i < 6; i++) {
+      input[i] = 0;
+    }
     pinstr = "";
-    // actuate the solenoid
-    digitalWrite(relayPin, HIGH);
-    delay(10000);
-    digitalWrite(relayPin, LOW);
   }
 
   char key = keypad.getKey();
@@ -141,7 +146,7 @@ void loop() {
     status = true;
   }
 
-  if (key == 'B') {
+  if (status && key == 'B') {
     access_mode = "MASUK";
     status = false;
     count = 0;
@@ -156,7 +161,7 @@ void loop() {
 
     delay(2000);
     lcd.clear();
-  } else if (key == 'C') {
+  } else if (status && key == 'C') {
     access_mode = "KELUAR";
     status = false;
     count = 0;
